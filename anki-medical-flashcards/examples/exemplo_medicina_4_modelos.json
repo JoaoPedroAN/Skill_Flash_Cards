@@ -1,0 +1,59 @@
+{
+  "deck_name": "Medicina::Modelos Baseados em Evidencias (USMLE & Atomicos)",
+  "cards": [
+    {
+      "type": "atomic",
+      "front": "Qual enzima está deficiente na Doença de von Gierke (Glicogenose Tipo I)?",
+      "back": "Glicose-6-fosfatase",
+      "extra": "Causa hipoglicemia grave de jejum, acidose láctica, hiperuricemia, hipertrigliceridemia e hepatomegalia acentuada.",
+      "tags": ["Bioquimica", "Genetica", "Step1"]
+    },
+    {
+      "type": "atomic",
+      "front": "Qual é o antídoto específico para intoxicação grave por beta-bloqueadores refratária à atropina e expansão volêmica?",
+      "back": "Glucagon IV (em bolus seguido de infusão contínua)",
+      "extra": "Mecanismo: Ativa a adenilato ciclase aumentando o AMPc intracelular no miocárdio por via independente dos receptores beta-1 adrenérgicos.",
+      "tags": ["Farmacologia", "Emergencia", "Toxicologia"]
+    },
+    {
+      "type": "usmle_hybrid",
+      "text": "Na {{c1::Esclerose Tuberosa}}, mutações nos genes supressores tumorais {{c1::TSC1 (hamartina) ou TSC2 (tuberina)}} levam à hiperativação constitutiva da via mTOR, causando hamartomas múltiplos (rabdomiomas cardíacos, tubérculos corticais e angiomiolipomas renais).",
+      "extra": "<ul><li><b>Padrão de Herança:</b> Autossômica dominante (expressividade variável).</li><li><b>Apresentação Dermatológica Precoce:</b> Máculas hipomelanóticas em 'folha de freixo' (<i>ash-leaf spots</i>, visíveis à lâmpada de Wood), angiofibromas faciais e placas de Shagreen.</li><li><b>Síndrome Epiléptica Associada em Lactentes:</b> Síndrome de West (espasmos infantis + hipsarritmia no EEG) — tratamento de 1ª linha: <b>Vigabatrina</b>.</li><li><b>Alvo Farmacológico Direcionado:</b> Inibidores de mTOR (Everolimo / Sirolimo).</li></ul>",
+      "source": "First Aid USMLE Step 1 / Pathoma / Neurologia",
+      "tags": ["USMLE_Step1", "Neurologia", "Genetica", "AnKing_Style"]
+    },
+    {
+      "type": "usmle_hybrid",
+      "text": "No preparo pré-operatório do {{c1::Feocromocitoma}}, deve-se iniciar bloqueio {{c1::alfa-adrenérgico (ex.: fenoxibenzamina ou doxazosina)}} 10 a 14 dias ANTES de administrar qualquer beta-bloqueador.",
+      "extra": "<ul><li><b>Por que nunca iniciar o beta-bloqueador primeiro?</b> O bloqueio isolado dos receptores $\\beta_2$ vasodilatadores periféricos deixa a estimulação $\\alpha_1$ vasoconstritora sem oposição (<i>unopposed alpha stimulation</i>), desencadeando crise hipertensiva maligna e edema agudo de pulmão.</li><li><b>Diagnóstico Inicial (Maior Sensibilidade):</b> Metanefrinas fracionadas livres plasmáticas ou metanefrinas urinárias de 24 horas.</li></ul>",
+      "source": "First Aid / UWorld / Endocrinologia",
+      "tags": ["USMLE_Step1", "Endocrinologia", "Farmacologia"]
+    },
+    {
+      "type": "clinical_vignette",
+      "vignette": "Homem de 62 anos, hipertenso e tabagista, dá entrada na emergência com dor torácica lancinante de início súbito há 1 hora, irradiada para a região interescapular. Ao exame: PA = 195/115 mmHg no membro superior direito e 145/85 mmHg no membro superior esquerdo; FC = 108 bpm. ECG mostra sobrecarga ventricular esquerda sem supradesnivelamento de ST. Angio-TC de aorta demonstra lâmina de dissecção iniciando distalmente à artéria subclávia esquerda, sem sinais de ruptura ou isquemia mesentérica/renal.",
+      "question": "Qual é o próximo melhor passo imediato no manejo farmacológico deste paciente?",
+      "answer": "Beta-bloqueador venoso titulável (Esmolol ou Labetalol IV) para reduzir FC < 60 bpm e PAS entre 100–120 mmHg.",
+      "extra": "<ul><li><b>Diagnóstico:</b> Dissecção Aórtica Aguda Stanford Tipo B (DeBakey III) não complicada.</li><li><b>Princípio Terapêutico (Anti-Impulse Therapy):</b> Reduzir o estresse de cisalhamento na parede aórtica ($dP/dt$) antes de usar vasodilatadores diretos (como nitroprussiato de sódio).</li><li><b>Quando operar o Tipo B (TEVAR)?</b> Apenas se complicada (ruptura, expansão rápida, síndrome de má perfusão visceral/renal/membros ou dor refratária).</li></ul>",
+      "tags": ["USMLE_Step2CK", "Cardiologia", "Emergencia"]
+    },
+    {
+      "type": "question_error",
+      "error_type": "Tipo D • Erro de Prioridade na Conduta (Next Best Step)",
+      "prompt": "Paciente vítima de colisão automobilística apresenta dor abdominal difusa, PA = 78/42 mmHg, FC = 134 bpm mesmo após infusão de cristaloide/concentrado de hemácias e FAST positivo no espaço hepatorrenal (Morrison). Qual é a conduta imediata?",
+      "answer": "Laparotomia exploradora imediata (encaminhar direto ao Centro Cirúrgico).",
+      "why_not_distractor": "<b>Por que NÃO realizar Tomografia Computadorizada (TC) de abdome:</b> A TC requer transporte e tempo, sendo contraindicada no paciente com trauma abdominal fechado <b>hemodinamicamente instável</b> e FAST positivo.<br><b>Quando a TC de abdome com contraste SERIA a resposta correta:</b> Exclusivamente no paciente <b>hemodinamicamente estável</b> (PAS > 90 mmHg sustentada), para estadiar lesões de órgãos sólidos (baço/fígado) e definir tratamento não operatório.",
+      "educational_objective": "No trauma abdominal contuso com instabilidade hemodinâmica e FAST (ou LPD) positivo, o próximo passo é sempre laparotomia exploradora imediata, nunca tomografia.",
+      "tags": ["Caderno_de_Erros", "Cirurgia", "Trauma", "ATLS"]
+    },
+    {
+      "type": "question_error",
+      "error_type": "Tipo C • Confusão com Distrator (Diagnóstico Diferencial)",
+      "prompt": "Diante de um paciente com dor em quadrante superior direito e febre, qual achado clínico-laboratorial diferencia Colangite Aguda de Colecistite Aguda não complicada?",
+      "answer": "Presença de icterícia colestática franca (Tríade de Charcot), elevação acentuada de bilirrubina direta/FA/GGT e dilatação do colédoco (> 6 mm) na imagem.",
+      "why_not_distractor": "<b>Por que NÃO é Colecistite Aguda isolada:</b> Na colecistite aguda simples, o cálculo impacta apenas no <b>ducto cístico</b> (causando sinal de Murphy positivo e espessamento parietal vesicular > 4 mm), sem obstruir a árvore biliar principal (colédoco) e, portanto, sem icterícia significativa (exceto na rara Síndrome de Mirizzi).",
+      "educational_objective": "Febre + dor em HCD + icterícia (Tríade de Charcot) indica obstrução da via biliar principal (Colangite Aguda), exigindo antibioticoterapia IV e descompressão biliar via CPRE, e não apenas colecistectomia.",
+      "tags": ["Caderno_de_Erros", "Cirurgia", "Gastroenterologia"]
+    }
+  ]
+}
