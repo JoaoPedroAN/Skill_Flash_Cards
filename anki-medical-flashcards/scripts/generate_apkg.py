@@ -7,6 +7,8 @@ Suporta 4 arquiteturas cognitivas:
   2. usmle_hybrid      -> Flashcard Híbrido USMLE Step 1 (Cloze + Campo Extra estilo AnKing/Zanki)
   3. clinical_vignette -> Flashcard Extenso de Mini-Vinheta Clínica (Estilo USMLE Step 2 CK / Yousmle)
   4. question_error    -> Transformação de Erro de Questão (Caderno de Erros c/ Análise de Distrator)
+  5. image_occlusion   -> Oclusão de Imagem pré-desenhada (uma área coberta por card)
+Todos aceitam imagem e áudio opcionais (image_front/back, audio_front/back).
 """
 
 import argparse
@@ -424,13 +426,256 @@ def _field(item: dict, key: str, default: str = "") -> str:
     return sanitize_html_field(item.get(key, default))
 
 
-def build_deck(data: dict):
-    """Monta o Deck a partir do dicionário JSON. Retorna (deck, counts)."""
+# ---------------------------------------------------------------------------
+# Mídia: imagens, áudio e oclusão de imagem pré-desenhada
+# ---------------------------------------------------------------------------
+
+IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp"}
+AUDIO_EXTS = {".mp3", ".ogg", ".wav", ".m4a", ".flac"}
+MAX_IMAGE_SIDE = 1200  # px: leve para sincronizar com o celular
+IMG_STYLE = "max-width:100%;height:auto;border-radius:6px;margin:10px 0;"
+
+
+def _pil():
+    try:
+        from PIL import Image, ImageDraw, ImageOps
+    except ImportError as exc:  # pragma: no cover
+        raise RuntimeError("Imagens precisam da biblioteca Pillow (pip install pillow).") from exc
+    return Image, ImageDraw, ImageOps
+
+
+class MediaCollector:
+    """Copia/converte mídia para uma pasta temporária com nomes neutros (hash),
+    para o nome do arquivo nunca entregar a resposta e não colidir no Anki."""
+
+    def __init__(self, base_dir, work_dir):
+        self.base_dir = Path(base_dir)
+        self.work_dir = Path(work_dir)
+        self.paths = []
+
+    def resolve(self, rel, idx):
+        p = Path(rel)
+        if not p.is_absolute():
+            p = self.base_dir / p
+        if not p.is_file():
+            raise ValueError(f"Card #{idx}: arquivo de mídia não encontrado: {p}")
+        return p
+
+    def _store(self, data: bytes, ext: str) -> str:
+        name = f"med_{hashlib.sha1(data).hexdigest()[:16]}{ext}"
+        out = self.work_dir / name
+        if not out.exists():
+            out.write_bytes(data)
+            self.paths.append(str(out))
+        return name
+
+    def _store_image(self, img) -> str:
+        import io
+        Image, _, _ = _pil()
+        img = img.copy()
+        img.thumbnail((MAX_IMAGE_SIDE, MAX_IMAGE_SIDE))
+        if img.mode in ("RGBA", "LA", "P"):
+            img = img.convert("RGBA")
+            fundo = Image.new("RGB", img.size, "white")
+            fundo.paste(img, mask=img.split()[-1])
+            img = fundo
+        else:
+            img = img.convert("RGB")
+        buf = io.BytesIO()
+        img.save(buf, "JPEG", quality=85, optimize=True)
+        return self._store(buf.getvalue(), ".jpg")
+
+    def open_image(self, rel, idx):
+        Image, _, ImageOps = _pil()
+        p = self.resolve(rel, idx)
+        if p.suffix.lower() not in IMAGE_EXTS:
+            raise ValueError(f"Card #{idx}: formato de imagem não suportado: {p.name}")
+        return ImageOps.exif_transpose(Image.open(p))
+
+    def image_tag(self, rel, idx) -> str:
+        return self.image_tag_from_pil(self.open_image(rel, idx))
+
+    def image_tag_from_pil(self, img) -> str:
+        return f'<img src="{self._store_image(img)}" style="{IMG_STYLE}">'
+
+    def sound_tag(self, rel, idx) -> str:
+        p = self.resolve(rel, idx)
+        ext = p.suffix.lower()
+        if ext not in AUDIO_EXTS:
+            raise ValueError(f"Card #{idx}: formato de áudio não suportado: {p.name}")
+        return f"[sound:{self._store(p.read_bytes(), ext)}]"
+
+
+def media_html(item, media, idx, side):
+    """Monta o HTML de imagem/áudio de um lado do card ('front' ou 'back')."""
+    parts = []
+    for kind in ("image", "audio"):
+        rel = item.get(f"{kind}_{side}")
+        if not rel:
+            continue
+        if media is None:
+            raise ValueError(f"Card #{idx}: mídia exige a pasta do JSON (use build_apkg).")
+        parts.append(media.image_tag(rel, idx) if kind == "image" else media.sound_tag(rel, idx))
+    if side == "back" and item.get("media_credit"):
+        parts.append(
+            '<div style="font-size:11px;opacity:0.6;">Crédito da mídia: '
+            f"{sanitize_html_field(item['media_credit'])}</div>"
+        )
+    return "".join(parts)
+
+
+def _join(text, extra_html, sep="<br>"):
+    if not extra_html:
+        return text
+    return f"{text}{sep}{extra_html}" if text else extra_html
+
+
+def _check_box(box, idx):
+    if not (isinstance(box, (list, tuple)) and len(box) == 4):
+        raise ValueError(f"Card #{idx}: 'box' deve ser [x, y, largura, altura] em frações de 0 a 1.")
+    x, y, w, h = (float(v) for v in box)
+    if w <= 0 or h <= 0 or x < 0 or y < 0 or x + w > 1.0001 or y + h > 1.0001:
+        raise ValueError(f"Card #{idx}: 'box' {box} fora da imagem (use frações de 0 a 1).")
+    return x, y, w, h
+
+
+def _px(box, size):
+    x, y, w, h = box
+    W, H = size
+    return [round(x * W), round(y * H), round((x + w) * W), round((y + h) * H)]
+
+
+def draw_occlusion(img, boxes, target, mode, revealed):
+    """Frente: alvo coberto (laranja); em 'hide_all' as outras áreas ficam cinza.
+    Verso: alvo revelado com contorno vermelho."""
+    _, ImageDraw, _ = _pil()
+    out = img.convert("RGB").copy()
+    d = ImageDraw.Draw(out)
+    esp = max(3, out.size[0] // 250)
+    for i, b in enumerate(boxes):
+        r = _px(b, out.size)
+        if i == target:
+            if revealed:
+                d.rectangle(r, outline="#dc2626", width=esp)
+            else:
+                d.rectangle(r, fill="#f59e0b", outline="#7c2d12", width=esp)
+        elif mode == "hide_all":
+            d.rectangle(r, fill="#94a3b8", outline="#334155", width=max(1, esp // 2))
+    return out
+
+
+def preview_occlusions(data, base_dir, out_dir):
+    """Gera PNGs com todas as áreas numeradas, para conferir antes do .apkg."""
+    _, ImageDraw, _ = _pil()
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    media = MediaCollector(base_dir, out_dir)
+    saidas = []
+    for idx, item in enumerate(data.get("cards", []), start=1):
+        if item.get("type") != "image_occlusion":
+            continue
+        img = media.open_image(item["image"], idx).convert("RGB")
+        d = ImageDraw.Draw(img)
+        esp = max(3, img.size[0] // 250)
+        for n, occ in enumerate(item.get("occlusions", []), start=1):
+            r = _px(_check_box(occ.get("box"), idx), img.size)
+            d.rectangle(r, outline="#dc2626", width=esp)
+            d.rectangle([r[0], r[1], r[0] + 28, r[1] + 22], fill="#dc2626")
+            d.text((r[0] + 6, r[1] + 4), str(n), fill="white")
+        p = out_dir / f"previa_card{idx}.png"
+        img.save(p)
+        saidas.append(str(p))
+    return saidas
+
+
+IMAGE_OCCLUSION_MODEL = genanki.Model(
+    model_id=stable_id("Antigravity_Med_Image_Occlusion_v1"),
+    name="Medicina - 5. Oclusão de Imagem (pré-desenhada) v1",
+    fields=[
+        {"name": "Header"},
+        {"name": "ImageFront"},
+        {"name": "ImageBack"},
+        {"name": "Answer"},
+        {"name": "Extra"},
+        {"name": "Source"},
+        {"name": "Year"},
+    ],
+    templates=[
+        {
+            "name": "Card de Oclusão",
+            "qfmt": (
+                '<div class="badge badge-occlusion">Residência • Oclusão de Imagem</div>'
+                '{{#Header}}<div class="prompt-text">{{Header}}</div>{{/Header}}'
+                "{{ImageFront}}"
+            ),
+            "afmt": (
+                '<div class="badge badge-occlusion">Residência • Oclusão de Imagem</div>'
+                '{{#Header}}<div class="prompt-text">{{Header}}</div>{{/Header}}'
+                "{{ImageBack}}"
+                '<div class="answer-box">{{Answer}}</div>'
+                '{{#Extra}}<div class="extra-box">{{Extra}}</div>{{/Extra}}'
+                + SOURCE_FOOTER
+            ),
+        }
+    ],
+    css=SHARED_CSS
+    + """
+.badge-occlusion { background-color: #ccfbf1; color: #0f766e; }
+.nightMode .badge-occlusion, .night_mode .badge-occlusion { background-color: #134e4a; color: #5eead4; }
+""",
+)
+
+
+def occlusion_notes(item, media, idx, source, year, tags):
+    """Um card por área ocluída."""
+    if media is None:
+        raise ValueError(f"Card #{idx}: oclusão exige a pasta do JSON (use build_apkg).")
+    occs = item.get("occlusions") or []
+    if not occs:
+        raise ValueError(f"Card #{idx} (image_occlusion): informe 'occlusions'.")
+    mode = item.get("mode", "hide_one")
+    if mode not in ("hide_one", "hide_all"):
+        raise ValueError(f"Card #{idx}: 'mode' deve ser 'hide_one' ou 'hide_all'.")
+    if not item.get("image"):
+        raise ValueError(f"Card #{idx} (image_occlusion): informe 'image'.")
+    img = media.open_image(item["image"], idx)
+    boxes = [_check_box(o.get("box"), idx) for o in occs]
+    header = _field(item, "header", "Qual estrutura está coberta?")
+    credit = media_html({"media_credit": item.get("media_credit", "")}, media, idx, "back")
+    img_id = hashlib.sha1(img.convert("RGB").tobytes()).hexdigest()[:16]
+    notes = []
+    for i, occ in enumerate(occs):
+        answer = _field(occ, "answer")
+        if not answer:
+            raise ValueError(f"Card #{idx}: a área {i + 1} está sem 'answer'.")
+        front = media.image_tag_from_pil(draw_occlusion(img, boxes, i, mode, revealed=False))
+        back = media.image_tag_from_pil(draw_occlusion(img, boxes, i, mode, revealed=True))
+        extra = _join(_field(occ, "extra") or _field(item, "extra"), credit, "")
+        notes.append(
+            genanki.Note(
+                model=IMAGE_OCCLUSION_MODEL,
+                fields=[header, front, back, answer, extra, source, year],
+                tags=tags + ["Modelo::5_Oclusao_de_Imagem"],
+                guid=genanki.guid_for("image_occlusion", img_id, answer, str(boxes[i])),
+            )
+        )
+    return notes
+
+
+def build_deck(data: dict, media: "MediaCollector | None" = None):
+    """Monta o Deck a partir do dicionário JSON. Retorna (deck, counts).
+    `media` é necessário quando algum card usa imagem, áudio ou oclusão."""
     deck_name = data.get("deck_name", "Medicina::Flashcards Baseados em Evidencias")
     cards_data = data.get("cards", [])
 
     deck = genanki.Deck(deck_id=stable_id(deck_name), name=deck_name)
-    counts = {"atomic": 0, "usmle_hybrid": 0, "clinical_vignette": 0, "question_error": 0}
+    counts = {
+        "atomic": 0,
+        "usmle_hybrid": 0,
+        "clinical_vignette": 0,
+        "question_error": 0,
+        "image_occlusion": 0,
+    }
 
     for idx, item in enumerate(cards_data, start=1):
         card_type = item.get("type", "atomic").strip().lower()
@@ -443,6 +688,16 @@ def build_deck(data: dict):
                 "diretriz, artigo ou livro-texto (nunca o material da aula nem material de prova)."
             )
 
+        if card_type == "image_occlusion":
+            for note in occlusion_notes(item, media, idx, source, year, tags):
+                deck.add_note(note)
+                counts["image_occlusion"] += 1
+            continue
+
+        # Imagem/áudio opcionais: frente vai junto da pergunta; verso vai no Extra.
+        mfront = media_html(item, media, idx, "front")
+        mback = media_html(item, media, idx, "back")
+
         if card_type == "atomic":
             front = _field(item, "front")
             back = _field(item, "back")
@@ -454,7 +709,15 @@ def build_deck(data: dict):
                 )
             note = genanki.Note(
                 model=ATOMIC_MODEL,
-                fields=[front, back, _field(item, "extra"), source, year, reverse_front, reverse_back],
+                fields=[
+                    _join(front, mfront),
+                    back,
+                    _join(_field(item, "extra"), mback),
+                    source,
+                    year,
+                    reverse_front,
+                    reverse_back,
+                ],
                 tags=tags + ["Modelo::1_Atomico"],
                 guid=genanki.guid_for("atomic", front, back),
             )
@@ -464,7 +727,7 @@ def build_deck(data: dict):
             check_cloze_c1_only(text, idx)
             note = genanki.Note(
                 model=USMLE_HYBRID_MODEL,
-                fields=[text, _field(item, "extra"), source, year],
+                fields=[_join(text, mfront), _join(_field(item, "extra"), mback), source, year],
                 tags=tags + ["Modelo::2_USMLE_Hibrido_Cloze"],
                 guid=genanki.guid_for("usmle_hybrid", text),
             )
@@ -474,7 +737,14 @@ def build_deck(data: dict):
             question = _field(item, "question", "Qual o diagnóstico mais provável e a conduta imediata?")
             note = genanki.Note(
                 model=CLINICAL_VIGNETTE_MODEL,
-                fields=[vignette, question, _field(item, "answer"), _field(item, "extra"), source, year],
+                fields=[
+                    _join(vignette, mfront),
+                    question,
+                    _field(item, "answer"),
+                    _join(_field(item, "extra"), mback),
+                    source,
+                    year,
+                ],
                 tags=tags + ["Modelo::3_Vinheta_Clinica_Step2CK"],
                 guid=genanki.guid_for("clinical_vignette", vignette, question),
             )
@@ -486,10 +756,10 @@ def build_deck(data: dict):
                 model=QUESTION_ERROR_MODEL,
                 fields=[
                     _field(item, "error_type", "Análise de Erro de Questão"),
-                    prompt,
+                    _join(prompt, mfront),
                     answer,
                     _field(item, "why_not_distractor"),
-                    _field(item, "educational_objective"),
+                    _join(_field(item, "educational_objective"), mback),
                     source,
                     year,
                 ],
@@ -499,8 +769,8 @@ def build_deck(data: dict):
 
         else:
             raise ValueError(
-                f"Tipo de card desconhecido no item #{idx}: '{card_type}'. "
-                "Use 'atomic', 'usmle_hybrid', 'clinical_vignette' ou 'question_error'."
+                f"Tipo de card desconhecido no item #{idx}: '{card_type}'. Use 'atomic', "
+                "'usmle_hybrid', 'clinical_vignette', 'question_error' ou 'image_occlusion'."
             )
 
         deck.add_note(note)
@@ -510,31 +780,53 @@ def build_deck(data: dict):
 
 
 def build_apkg(input_json_path: str, output_apkg_path: str) -> dict:
-    with open(input_json_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    import tempfile
 
-    deck, counts = build_deck(data)
+    input_path = Path(input_json_path).resolve()
+    with open(input_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
 
     out_path = Path(output_apkg_path).resolve()
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    genanki.Package(deck).write_to_file(str(out_path))
+
+    with tempfile.TemporaryDirectory() as tmp:
+        media = MediaCollector(input_path.parent, tmp)
+        deck, counts = build_deck(data, media)
+        package = genanki.Package(deck)
+        package.media_files = media.paths
+        package.write_to_file(str(out_path))
 
     return {
         "deck_name": deck.name,
         "output_file": str(out_path),
         "total_notes": sum(counts.values()),
         "total_cards": sum(len(n.cards) for n in deck.notes),
+        "media_files": len(media.paths),
         "breakdown": counts,
     }
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Gera pacote .apkg do Anki com as 4 arquiteturas médicas baseadas em evidências."
+        description="Gera pacote .apkg do Anki com os modelos médicos baseados em evidências."
     )
     parser.add_argument("--input", "-i", required=True, help="Caminho para o arquivo JSON de entrada.")
-    parser.add_argument("--output", "-o", required=True, help="Caminho para o arquivo .apkg de saída.")
+    parser.add_argument("--output", "-o", help="Caminho para o arquivo .apkg de saída.")
+    parser.add_argument(
+        "--preview-occlusions",
+        metavar="PASTA",
+        help="Só gera PNGs com as áreas de oclusão numeradas (para conferir antes do .apkg).",
+    )
     args = parser.parse_args()
+
+    if args.preview_occlusions:
+        input_path = Path(args.input).resolve()
+        data = json.loads(input_path.read_text(encoding="utf-8"))
+        saidas = preview_occlusions(data, input_path.parent, args.preview_occlusions)
+        print(json.dumps({"previas": saidas}, ensure_ascii=False, indent=2))
+        return
+    if not args.output:
+        parser.error("informe --output (ou use --preview-occlusions).")
 
     summary = build_apkg(args.input, args.output)
     print(json.dumps(summary, ensure_ascii=False, indent=2))

@@ -4,8 +4,9 @@ description: >-
   Realiza Fact-Check médico rigoroso de aulas, slides, fotos e anotações de alunos (cruzando com
   diretrizes oficiais e PubMed) e cria flashcards médicos de alta retenção baseados em evidências
   (PubMed DEAME framework, Woźniak, Matuschak, AnKing e Yousmle), exportando diretamente arquivos
-  nativos do Anki (.apkg) nas 4 modalidades: (1) Atômico Puro, (2) Híbrido USMLE Step 1 (Cloze + Extra),
-  (3) Mini-Vinheta Clínica (Step 2 CK / Conduta) e (4) Caderno de Erros de Questões (Dissecação de Questão Errada).
+  nativos do Anki (.apkg) nas 5 modalidades: (1) Atômico Puro, (2) Híbrido USMLE Step 1 (Cloze + Extra),
+  (3) Mini-Vinheta Clínica (Step 2 CK / Conduta), (4) Caderno de Erros de Questões (Dissecação de Questão Errada)
+  e (5) Oclusão de Imagem; todos aceitam imagens (ECG, radiografia, lesões, fluxogramas) e áudio (ausculta).
 ---
 
 # Anki Medical Flashcard Generator Skill (`.apkg`)
@@ -75,9 +76,9 @@ Antes de escrever o JSON final, execute uma triagem rígida para eliminar prolif
 
 ---
 
-## 1. Quando Usar Cada um dos 4 Modelos de Flashcard
+## 1. Quando Usar Cada um dos 5 Modelos de Flashcard
 
-Após concluir o **Fact-Check (Etapa 0)**, classifique cada conceito médico validado em uma das **4 arquiteturas abaixo**:
+Após concluir o **Fact-Check (Etapa 0)**, classifique cada conceito médico validado em uma das **5 arquiteturas abaixo**:
 
 ### Caso 1: `atomic` — Flashcard Atômico Puro (Estilo Woźniak / Matuschak)
 * **Quando usar:** Fatos arbitrários, farmacologia pontual (mecanismo de ação, antídotos, efeitos adversos clássicos), microbiologia, genética (translocações, genes), bioquímica (enzimas deficientes) e valores de corte laboratoriais.
@@ -120,6 +121,45 @@ Após concluir o **Fact-Check (Etapa 0)**, classifique cada conceito médico val
   3. **Formule a Resposta (`answer`):** Direta, clara e objetiva.
   4. **Preencha a Análise do Distrator (`why_not_distractor`):** Explique claramente **por que a alternativa marcada estava errada neste paciente** E **em qual cenário clínico aquela alternativa marcada SERIA a resposta correta** (transformando 1 erro em 2 acertos futuros).
   5. **Extraia o Objetivo Educacional (`educational_objective`):** A regra áurea generalizável (1 a 2 frases) que resolve qualquer questão futura sobre o mesmo princípio.
+
+### Caso 5: `image_occlusion` — Oclusão de Imagem (Pré-Desenhada)
+* **Quando usar:** quando a prova cobra **reconhecer uma estrutura ou um passo numa imagem**: anatomia radiológica, fluxogramas de diretriz, esquemas de fisiologia, lâminas, achados de eletrocardiograma (ECG). Woźniak (regra 8): a oclusão de imagem rende tanto quanto o cloze.
+* **Como funciona:** cada área em `occlusions` vira **1 card**. Na frente a área fica coberta em laranja; no verso aparece com contorno vermelho e a resposta embaixo.
+  * `mode: "hide_one"` (padrão): esconde só a área perguntada; as outras ficam visíveis (bom para estruturas independentes).
+  * `mode: "hide_all"`: esconde todas (as outras em cinza); use quando ver uma área entregaria a vizinha (ex.: passos seguidos de um fluxograma).
+* **Coordenadas (`box`):** `[x, y, largura, altura]` em frações de 0 a 1 da imagem (canto superior esquerdo = 0,0).
+* **Fluxo obrigatório:**
+  1. Abra a imagem, estime as caixas e gere a **prévia numerada**: `python "<pasta da skill>\scripts\generate_apkg.py" -i cards.json --preview-occlusions <pasta>`.
+  2. **Abra a prévia e confira** se cada caixa cobre todo o alvo (rótulo inteiro, sem cortar letras) e nada além dele. Ajuste e gere de novo até ficar certo.
+  3. Mostre a prévia ao usuário antes de gerar o `.apkg`.
+* **High-yield:** cubra só as estruturas que a prova cobra (em geral 3 a 6 por imagem), não todos os rótulos.
+
+---
+
+## 1.1. Imagens e Áudio (Qualquer Modelo)
+
+Todos os modelos aceitam mídia opcional. O caminho é relativo à pasta do JSON.
+
+| Campo | Onde aparece | Uso típico |
+|---|---|---|
+| `image_front` | Junto da pergunta | Eletrocardiograma (ECG), radiografia, lesão de pele, fundo de olho, lâmina → "Qual o diagnóstico?" |
+| `image_back` | No verso (área Extra) | Fluxograma, esquema ou exame que reforça a resposta |
+| `audio_front` | Toca ao abrir o card | Ausculta cardíaca/pulmonar → "Qual o achado?" |
+| `audio_back` | No verso | Som que exemplifica a resposta |
+| `media_credit` | Rodapé do verso | Autor, site e licença da mídia de terceiros |
+
+**Regras obrigatórias:**
+1. **De onde vem a mídia:**
+   * Arquivos que o usuário fornecer (fotos, prints, slides): pode usar.
+   * Apostilas e materiais de cursinho: **só se o usuário indicar explicitamente** aquele material.
+   * Fora isso: busque na internet, em livros-texto e PDFs abertos, priorizando bancos com licença aberta (Wikimedia Commons, Radiopaedia, Open-i/NLM, artigos de acesso aberto). Confira a licença na página da própria imagem e preencha `media_credit` (autor, site, licença). Antes de baixar qualquer arquivo, peça autorização ao usuário informando nome, origem e tamanho.
+2. **A mídia não pode entregar a resposta:** recorte legendas, setas com nome, marcas d'água e títulos; o script renomeia o arquivo para um nome neutro (`med_<código>.jpg`) automaticamente.
+3. **Sem marcas:** recorte logotipos e nomes de cursinho, plataforma ou professor de qualquer imagem.
+4. **Recorte no achado:** a imagem deve mostrar o que se pergunta, sem área inútil. O script reduz para no máximo 1.200 px e salva em JPEG (leve para o celular).
+5. **High-yield:** use imagem quando a prova cobra **reconhecer** algo visualmente (ou áudio para ausculta). Não ilustre card que já funciona só com texto.
+6. Mídia de terceiros não verificada ou de origem desconhecida: deixe isso claro em `media_credit` e não compartilhe o deck.
+
+**Onde o áudio rende mais:** ausculta cardíaca (sopros de estenose aórtica e insuficiência mitral, terceira bulha (B3), quarta bulha (B4), atrito pericárdico), ausculta pulmonar (estertores, sibilos, roncos, estridor, atrito pleural), pediatria (tosse ladrante do crupe, guincho da coqueluche, gemido expiratório do recém-nascido), neurologia (disartria, afasia).
 
 ---
 
@@ -185,6 +225,49 @@ Sempre que o usuário pedir para criar flashcards ou exportar para o Anki, gere 
 }
 ```
 
+### 2.1.1. Exemplo com Imagem, Áudio e Oclusão
+
+```json
+{
+  "deck_name": "Medicina::Cardiologia::Exames",
+  "cards": [
+    {
+      "type": "atomic",
+      "front": "Qual o diagnóstico deste eletrocardiograma (ECG)?",
+      "back": "Bloqueio atrioventricular (BAV) de 2º grau Mobitz II",
+      "image_front": "midia/ecg_01.png",
+      "media_credit": "Autor X, Wikimedia Commons, CC BY-SA 4.0",
+      "source": "Diretriz ACC/AHA/HRS de bradicardia e distúrbios de condução",
+      "source_year": "2018",
+      "tags": ["Clinica_Medica::Cardiologia::Bradiarritmias"]
+    },
+    {
+      "type": "atomic",
+      "front": "Qual o achado nesta ausculta em foco aórtico?",
+      "back": "Sopro sistólico ejetivo em crescendo-decrescendo (estenose aórtica)",
+      "audio_front": "midia/ausculta_01.mp3",
+      "media_credit": "Autor Y, site Z, licença W",
+      "source": "Diretriz ACC/AHA de valvopatias",
+      "source_year": "2020",
+      "tags": ["Clinica_Medica::Cardiologia::Valvopatias"]
+    },
+    {
+      "type": "image_occlusion",
+      "image": "midia/rx_torax_pa.png",
+      "header": "Radiografia de tórax em incidência posteroanterior (PA): qual estrutura está coberta?",
+      "mode": "hide_one",
+      "occlusions": [
+        {"answer": "Botão aórtico", "box": [0.67, 0.19, 0.12, 0.04]},
+        {"answer": "Átrio direito", "box": [0.02, 0.58, 0.14, 0.04]}
+      ],
+      "source": "Felson's Principles of Chest Roentgenology (livro-texto)",
+      "media_credit": "Autor, site e licença da imagem",
+      "tags": ["Clinica_Medica::Radiologia::Radiografia_de_Torax"]
+    }
+  ]
+}
+```
+
 ### 2.2. Comando para Executar o Gerador
 
 O caminho do script depende da ferramenta onde a skill está instalada (use a pasta base da skill informada ao carregá-la):
@@ -195,6 +278,6 @@ O caminho do script depende da ferramenta onde a skill está instalada (use a pa
 python "<pasta da skill>\scripts\generate_apkg.py" --input "caminho/para/cards.json" --output "caminho/para/deck.apkg"
 ```
 
-> **Nota Técnica:** O script `generate_apkg.py` cria os 4 Note Types (versão v2, com campos `Source` e `Year`) no banco de dados interno do Anki (`collection.anki2`). O Note Type Cloze usa o tipo Cloze nativo do Anki, mas **esta skill usa somente `{{c1::...}}`**: o script recusa `c2`, `c3` etc. (1 nota = 1 card).
+> **Nota Técnica:** O script `generate_apkg.py` cria os 5 Note Types (1 a 4 na versão v2, com campos `Source` e `Year`; 5 = Oclusão de Imagem) e empacota as imagens e áudios no banco de dados interno do Anki (`collection.anki2`). O Note Type Cloze usa o tipo Cloze nativo do Anki, mas **esta skill usa somente `{{c1::...}}`**: o script recusa `c2`, `c3` etc. (1 nota = 1 card).
 >
 > **Testes:** na pasta da skill, rode `python -m unittest discover -s tests -v`. Rode sempre depois de alterar o script.
