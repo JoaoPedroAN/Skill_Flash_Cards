@@ -185,6 +185,12 @@ SHARED_CSS = """
     color: #60a5fa;
 }
 
+.source-line {
+    font-size: 12px;
+    opacity: 0.65;
+    margin-top: 10px;
+}
+
 hr#answer {
     border: none;
     border-top: 1px solid #cbd5e1;
@@ -202,20 +208,33 @@ def stable_id(name: str) -> int:
     return (int(digest[:8], 16) & 0x3FFFFFFF) + 1000000000
 
 
+# Rodapé de fonte + ano da diretriz, comum a todos os modelos (aparece só no verso).
+SOURCE_FOOTER = (
+    '{{#Source}}<div class="source-line">📚 Fonte: {{Source}}'
+    '{{#Year}} ({{Year}}){{/Year}}</div>{{/Source}}'
+)
+
+# v2: modelos ganharam os campos Source e Year (e o atômico, o sentido inverso).
+# IDs novos evitam conflito com os Note Types v1 já importados no Anki.
+
 # 1. Modelo Atômico Puro (Woźniak / Matuschak)
 ATOMIC_MODEL = genanki.Model(
-    model_id=stable_id("Antigravity_Med_Atomic_v1"),
-    name="Medicina - 1. Atômico Puro (Woźniak/Matuschak)",
+    model_id=stable_id("Antigravity_Med_Atomic_v2"),
+    name="Medicina - 1. Atômico Puro (Woźniak/Matuschak) v2",
     fields=[
         {"name": "Front"},
         {"name": "Back"},
         {"name": "Extra"},
+        {"name": "Source"},
+        {"name": "Year"},
+        {"name": "ReverseFront"},
+        {"name": "ReverseBack"},
     ],
     templates=[
         {
             "name": "Card Atômico",
             "qfmt": (
-                '<div class="badge badge-atomic">Atômico • Recuperação Direta</div>'
+                '<div class="badge badge-atomic">Residência • Card Atômico</div>'
                 '<div class="prompt-text">{{Front}}</div>'
             ),
             "afmt": (
@@ -224,37 +243,56 @@ ATOMIC_MODEL = genanki.Model(
                 '{{#Extra}}<div class="extra-box">'
                 '<div class="section-label">Nota Conceitual / Mecanismo</div>'
                 '{{Extra}}</div>{{/Extra}}'
+                + SOURCE_FOOTER
             ),
-        }
+        },
+        {
+            # Segundo sentido opcional: só gera card quando ReverseFront está preenchido.
+            "name": "Card Atômico (Sentido Inverso)",
+            "qfmt": (
+                '{{#ReverseFront}}'
+                '<div class="badge badge-atomic">Residência • Card Atômico (Inverso)</div>'
+                '<div class="prompt-text">{{ReverseFront}}</div>'
+                '{{/ReverseFront}}'
+            ),
+            "afmt": (
+                '{{FrontSide}}<hr id="answer">'
+                '<div class="answer-box">{{ReverseBack}}</div>'
+                '{{#Extra}}<div class="extra-box">'
+                '<div class="section-label">Nota Conceitual / Mecanismo</div>'
+                '{{Extra}}</div>{{/Extra}}'
+                + SOURCE_FOOTER
+            ),
+        },
     ],
     css=SHARED_CSS,
 )
 
 # 2. Modelo Híbrido USMLE Step 1 (Estilo AnKing / Zanki - Cloze Nativo)
 USMLE_HYBRID_MODEL = genanki.Model(
-    model_id=stable_id("Antigravity_Med_USMLE_Hybrid_Cloze_v1"),
-    name="Medicina - 2. Híbrido USMLE Step 1 (AnKing Cloze + Extra)",
+    model_id=stable_id("Antigravity_Med_USMLE_Hybrid_Cloze_v2"),
+    name="Medicina - 2. Híbrido USMLE Step 1 (AnKing Cloze + Extra) v2",
     fields=[
         {"name": "Text"},
         {"name": "Extra"},
         {"name": "Source"},
+        {"name": "Year"},
     ],
     templates=[
         {
             "name": "Cloze Híbrido USMLE",
             "qfmt": (
-                '<div class="badge badge-hybrid">USMLE Step 1 • Cloze Contextualizado</div>'
+                '<div class="badge badge-hybrid">Residência • Cloze</div>'
                 '<div class="prompt-text">{{cloze:Text}}</div>'
             ),
             "afmt": (
-                '<div class="badge badge-hybrid">USMLE Step 1 • Cloze Contextualizado</div>'
+                '<div class="badge badge-hybrid">Residência • Cloze</div>'
                 '<div class="prompt-text">{{cloze:Text}}</div>'
                 '<hr id="answer">'
                 '{{#Extra}}<div class="extra-box">'
                 '<div class="section-label">Extra • Fisiopatologia & Diagnóstico Diferencial (One-Stop-Shop)</div>'
                 '{{Extra}}</div>{{/Extra}}'
-                '{{#Source}}<div style="font-size:12px; opacity:0.65; margin-top:10px;">'
-                '📚 Fonte / Referência: {{Source}}</div>{{/Source}}'
+                + SOURCE_FOOTER
             ),
         }
     ],
@@ -264,19 +302,21 @@ USMLE_HYBRID_MODEL = genanki.Model(
 
 # 3. Modelo Extenso de Mini-Vinheta Clínica (Estilo USMLE Step 2 CK / Cheesy Dorian / Yousmle)
 CLINICAL_VIGNETTE_MODEL = genanki.Model(
-    model_id=stable_id("Antigravity_Med_Clinical_Vignette_v1"),
-    name="Medicina - 3. Mini-Vinheta Clínica (USMLE Step 2 CK / Yousmle)",
+    model_id=stable_id("Antigravity_Med_Clinical_Vignette_v2"),
+    name="Medicina - 3. Mini-Vinheta Clínica (USMLE Step 2 CK / Yousmle) v2",
     fields=[
         {"name": "Vignette"},
         {"name": "Question"},
         {"name": "Answer"},
         {"name": "Extra"},
+        {"name": "Source"},
+        {"name": "Year"},
     ],
     templates=[
         {
             "name": "Card de Vinheta Clínica",
             "qfmt": (
-                '<div class="badge badge-vignette">Step 2 CK • Vinheta Clínica & Raciocínio</div>'
+                '<div class="badge badge-vignette">Residência • Vinheta Clínica</div>'
                 '<div class="vignette-box">{{Vignette}}</div>'
                 '<div class="prompt-text">{{Question}}</div>'
             ),
@@ -286,6 +326,7 @@ CLINICAL_VIGNETTE_MODEL = genanki.Model(
                 '{{#Extra}}<div class="extra-box">'
                 '<div class="section-label">Discriminadores Clínicos & Algoritmo de Conduta</div>'
                 '{{Extra}}</div>{{/Extra}}'
+                + SOURCE_FOOTER
             ),
         }
     ],
@@ -294,20 +335,22 @@ CLINICAL_VIGNETTE_MODEL = genanki.Model(
 
 # 4. Modelo de Transformação de Erro de Questão (Caderno de Erros Inteligente)
 QUESTION_ERROR_MODEL = genanki.Model(
-    model_id=stable_id("Antigravity_Med_Question_Error_v1"),
-    name="Medicina - 4. Caderno de Erros de Questão (Análise de Distrator)",
+    model_id=stable_id("Antigravity_Med_Question_Error_v2"),
+    name="Medicina - 4. Caderno de Erros de Questão (Análise de Distrator) v2",
     fields=[
         {"name": "ErrorType"},
         {"name": "Prompt"},
         {"name": "Answer"},
         {"name": "WhyNotDistractor"},
         {"name": "EducationalObjective"},
+        {"name": "Source"},
+        {"name": "Year"},
     ],
     templates=[
         {
             "name": "Card de Erro de Questão",
             "qfmt": (
-                '<div class="badge badge-error">Caderno de Erros • {{ErrorType}}</div>'
+                '<div class="badge badge-error">Residência • Caderno de Erros • {{ErrorType}}</div>'
                 '<div class="prompt-text">{{Prompt}}</div>'
             ),
             "afmt": (
@@ -319,6 +362,7 @@ QUESTION_ERROR_MODEL = genanki.Model(
                 '{{#EducationalObjective}}<div class="objective-box">'
                 '<div class="section-label">🎯 Objetivo Educacional (Regra Geral de Prova)</div>'
                 '{{EducationalObjective}}</div>{{/EducationalObjective}}'
+                + SOURCE_FOOTER
             ),
         }
     ],
@@ -358,10 +402,30 @@ def sanitize_tags(tags_list):
     return [str(t).strip().replace(" ", "_") for t in tags_list if str(t).strip()]
 
 
-def build_apkg(input_json_path: str, output_apkg_path: str) -> dict:
-    with open(input_json_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
+CLOZE_INDEX_RE = re.compile(r"\{\{c(\d+)::")
 
+
+def check_cloze_c1_only(text: str, idx: int) -> None:
+    """Regra da skill: só {{c1::...}} (1 nota = 1 card). Recusa c2, c3 etc."""
+    indices = CLOZE_INDEX_RE.findall(text)
+    if not indices:
+        raise ValueError(
+            f"Card #{idx} do tipo 'usmle_hybrid' precisa conter ao menos uma marcação Cloze (ex.: {{{{c1::resposta}}}})."
+        )
+    outros = sorted({i for i in indices if i != "1"}, key=int)
+    if outros:
+        raise ValueError(
+            f"Card #{idx} do tipo 'usmle_hybrid' usa c{', c'.join(outros)}. "
+            "Use apenas {{c1::...}} (o mesmo índice para todos os trechos ocultos)."
+        )
+
+
+def _field(item: dict, key: str, default: str = "") -> str:
+    return sanitize_html_field(item.get(key, default))
+
+
+def build_deck(data: dict):
+    """Monta o Deck a partir do dicionário JSON. Retorna (deck, counts)."""
     deck_name = data.get("deck_name", "Medicina::Flashcards Baseados em Evidencias")
     cards_data = data.get("cards", [])
 
@@ -371,73 +435,62 @@ def build_apkg(input_json_path: str, output_apkg_path: str) -> dict:
     for idx, item in enumerate(cards_data, start=1):
         card_type = item.get("type", "atomic").strip().lower()
         tags = sanitize_tags(item.get("tags", []))
+        source = _field(item, "source")
+        year = sanitize_html_field(str(item.get("source_year", "") or ""))
 
         if card_type == "atomic":
-            front = sanitize_html_field(item.get("front", ""))
-            back = sanitize_html_field(item.get("back", ""))
-            extra = sanitize_html_field(item.get("extra", ""))
+            front = _field(item, "front")
+            back = _field(item, "back")
+            reverse_front = _field(item, "reverse_front")
+            reverse_back = _field(item, "reverse_back")
+            if bool(reverse_front) != bool(reverse_back):
+                raise ValueError(
+                    f"Card #{idx} do tipo 'atomic': 'reverse_front' e 'reverse_back' devem vir juntos."
+                )
             note = genanki.Note(
                 model=ATOMIC_MODEL,
-                fields=[front, back, extra],
+                fields=[front, back, _field(item, "extra"), source, year, reverse_front, reverse_back],
                 tags=tags + ["Modelo::1_Atomico"],
                 guid=genanki.guid_for("atomic", front, back),
             )
-            deck.add_note(note)
-            counts["atomic"] += 1
 
         elif card_type == "usmle_hybrid":
-            text = sanitize_html_field(item.get("text", ""))
-            extra = sanitize_html_field(item.get("extra", ""))
-            source = sanitize_html_field(item.get("source", ""))
-            if "{{c" not in text:
-                raise ValueError(
-                    f"Card #{idx} do tipo 'usmle_hybrid' precisa conter ao menos uma marcação Cloze (ex.: {{{{c1::resposta}}}})."
-                )
+            text = _field(item, "text")
+            check_cloze_c1_only(text, idx)
             note = genanki.Note(
                 model=USMLE_HYBRID_MODEL,
-                fields=[text, extra, source],
+                fields=[text, _field(item, "extra"), source, year],
                 tags=tags + ["Modelo::2_USMLE_Hibrido_Cloze"],
                 guid=genanki.guid_for("usmle_hybrid", text),
             )
-            deck.add_note(note)
-            counts["usmle_hybrid"] += 1
 
         elif card_type == "clinical_vignette":
-            vignette = sanitize_html_field(item.get("vignette", ""))
-            question = sanitize_html_field(
-                item.get("question", "Qual o diagnóstico mais provável e a conduta imediata?")
-            )
-            answer = sanitize_html_field(item.get("answer", ""))
-            extra = sanitize_html_field(item.get("extra", ""))
+            vignette = _field(item, "vignette")
+            question = _field(item, "question", "Qual o diagnóstico mais provável e a conduta imediata?")
             note = genanki.Note(
                 model=CLINICAL_VIGNETTE_MODEL,
-                fields=[vignette, question, answer, extra],
+                fields=[vignette, question, _field(item, "answer"), _field(item, "extra"), source, year],
                 tags=tags + ["Modelo::3_Vinheta_Clinica_Step2CK"],
                 guid=genanki.guid_for("clinical_vignette", vignette, question),
             )
-            deck.add_note(note)
-            counts["clinical_vignette"] += 1
 
         elif card_type == "question_error":
-            error_type = sanitize_html_field(item.get("error_type", "Análise de Erro de Questão"))
-            prompt = sanitize_html_field(item.get("prompt", ""))
-            answer = sanitize_html_field(item.get("answer", ""))
-            why_not_distractor = sanitize_html_field(item.get("why_not_distractor", ""))
-            educational_objective = sanitize_html_field(item.get("educational_objective", ""))
+            prompt = _field(item, "prompt")
+            answer = _field(item, "answer")
             note = genanki.Note(
                 model=QUESTION_ERROR_MODEL,
                 fields=[
-                    error_type,
+                    _field(item, "error_type", "Análise de Erro de Questão"),
                     prompt,
                     answer,
-                    why_not_distractor,
-                    educational_objective,
+                    _field(item, "why_not_distractor"),
+                    _field(item, "educational_objective"),
+                    source,
+                    year,
                 ],
                 tags=tags + ["Modelo::4_Erro_de_Questao"],
                 guid=genanki.guid_for("question_error", prompt, answer),
             )
-            deck.add_note(note)
-            counts["question_error"] += 1
 
         else:
             raise ValueError(
@@ -445,15 +498,27 @@ def build_apkg(input_json_path: str, output_apkg_path: str) -> dict:
                 "Use 'atomic', 'usmle_hybrid', 'clinical_vignette' ou 'question_error'."
             )
 
+        deck.add_note(note)
+        counts[card_type] += 1
+
+    return deck, counts
+
+
+def build_apkg(input_json_path: str, output_apkg_path: str) -> dict:
+    with open(input_json_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    deck, counts = build_deck(data)
+
     out_path = Path(output_apkg_path).resolve()
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    package = genanki.Package(deck)
-    package.write_to_file(str(out_path))
+    genanki.Package(deck).write_to_file(str(out_path))
 
     return {
-        "deck_name": deck_name,
+        "deck_name": deck.name,
         "output_file": str(out_path),
         "total_notes": sum(counts.values()),
+        "total_cards": sum(len(n.cards) for n in deck.notes),
         "breakdown": counts,
     }
 

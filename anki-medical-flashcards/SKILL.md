@@ -24,19 +24,20 @@ Esta skill audita materiais de estudo médico (slides, PDFs, fotos de aula, anot
 >
 > **Padrão Obrigatório de Substituição e Anonimização:**
 > 1. **Nome do Deck (`deck_name`):** Use sempre a taxonomia médica universal por especialidade e patologia (ex.: `Medicina::Cardiologia::Parada Cardiorrespiratoria e Ressuscitacao`, `Medicina::Neurologia::AVC Isquemico`).
-> 2. **Campo `source`:** Cite exclusivamente diretrizes oficiais de sociedades médicas, ensaios clínicos ou livros-texto de referência (ex.: `Diretrizes AHA/SBC 2020-2025`, `Diretriz Brasileira de Fibrilação Atrial (SBC)`, `Harrison Medicina Interna`, `First Aid / Pathoma`).
-> 3. **Conteúdo dos Cards (`front`, `back`, `text`, `extra`):** Extraia apenas conceitos fisiopatológicos e clínicos puros baseados em evidências. É expressamente proibido citar nomes de professores, jargões proprietários de cursinhos, logotipos ou referências a apostilas e aulas de plataformas comerciais.
+> 2. **Campos `source` e `source_year`:** Cite exclusivamente diretrizes oficiais de sociedades médicas, ensaios clínicos ou livros-texto de referência (ex.: `Diretrizes AHA/SBC 2020-2025`, `Diretriz Brasileira de Fibrilação Atrial (SBC)`, `Harrison Medicina Interna`, `First Aid / Pathoma`). Em `source_year`, coloque o ano da diretriz/edição usada (ex.: `2026`). Todos os 4 modelos têm esses campos; preencha sempre que a afirmação vier de diretriz. Se não souber o ano com certeza, deixe vazio — nunca invente.
+> 3. **Conteúdo dos Cards (`front`, `back`, `text`, `extra`, `tags`):** Extraia apenas conceitos fisiopatológicos e clínicos puros baseados em evidências. É expressamente proibido citar nomes de professores, jargões proprietários de cursinhos, logotipos ou referências a apostilas e aulas de plataformas comerciais.
+> 4. **Nomes de métodos e decks comerciais (AnKing, Zanki, Yousmle, Cheesy Dorian, UWorld, AMBOSS etc.):** servem apenas de referência metodológica para esta skill. **Não os cite no texto dos cards nem nas tags.** Livros-texto usados como referência podem aparecer somente no campo `source`.
 
 > **Regra Áurea de Qualidade:** **NUNCA gere flashcards diretamente de anotações de alunos, transcrições de IA ou slides sem antes realizar um Fact-Check completo.** Consolidar um dado clínico incorreto na memória de longo prazo via repetição espaçada é grave tanto para provas (USMLE, Revalida, Residência) quanto para a segurança do paciente.
 
-Sempre que o usuário fornecer materiais de estudo (slides, PDFs, apostilas, anotações ou resumos), execute obrigatoriamente estes **3 passos antes de gerar o `.apkg`**:
+Sempre que o usuário fornecer materiais de estudo (slides, PDFs, apostilas, anotações ou resumos), execute obrigatoriamente estes **4 passos (0.1 a 0.4) antes de gerar o `.apkg`**:
 
 ### Passo 0.1 — Cruzamento Interno de Fontes (Aula Principal vs. Anotações/Resumos)
 Leia todos os arquivos fornecidos (PDFs de slides, fotos da lousa/projeção, cadernos manuscritos e resumos automatizados) e procure ativamente por:
-1. **Inversões de sinais matemáticos e operadores:** Troca de $<$ por $>$, ou de $\ge$ por $>$ (ex.: anotar `PC-ASPECTS > 6` quando a diretriz define `≥ 6`).
+1. **Inversões de sinais matemáticos e operadores:** Troca de < por >, ou de ≥ por > (ex.: anotar `PC-ASPECTS > 6` quando a diretriz define `≥ 6`).
 2. **Inversão de ramos de fluxogramas:** Trocar a conduta do ramo *"Sim"* pela do ramo *"Não"* (ex.: inverter metas pressóricas de pacientes *com reperfusão* vs. *sem reperfusão*).
 3. **Mistura entre tabelas ou escores distintos:** Fundir o ponto de corte de uma escala diagnóstica usada para uma finalidade com o corte usado para outra (ex.: confundir o NIHSS de definição de *AVC Minor* para dupla antiagregação com o NIHSS de *timing* de anticoagulação).
-4. **Doses, vias e janelas temporais:** Conferir $\text{mg/kg}$, dose máxima absoluta, tempo de infusão (*bolus* vs. infusão contínua) e janelas em horas/dias.
+4. **Doses, vias e janelas temporais:** Conferir mg/kg, dose máxima absoluta, tempo de infusão (*bolus* vs. infusão contínua) e janelas em horas/dias.
 5. **Omissões de resumos automatizados (IA):** Resumos gerados por ferramentas de transcrição costumam omitir valores numéricos, pontos de corte e contraindicações (Classe 3). Reponha todos esses números a partir da fonte primária.
 
 ### Passo 0.2 — Verificação Externa em Diretrizes e PubMed
@@ -54,13 +55,20 @@ Apresente ao usuário (e, quando apropriado, salve em um arquivo Markdown de aud
 ### Passo 0.4 — Auditoria Anti-Redundância e Princípio do Card Único (Obrigatório)
 Antes de escrever o JSON final, execute uma triagem rígida para eliminar proliferação e cards repetitivos:
 1. **Cardinalidade Estrita (1 Fato Decisivo = 1 Único Card no Deck):** É expressamente proibido testar o mesmo conceito ou decisão clínica em modelos diferentes. Se uma conduta virou `clinical_vignette`, **não** crie um card `atomic` nem um `usmle_hybrid` para a mesma conduta.
-2. **Proibição de Cards Espelhados / Invertidos:** Não gere pares de perguntas recíprocas (ex.: *"Qual a causa de X?"* e *"A condição Y causa o quê?"*). Priorize sempre a direção de maior valor clínico:
-   * Achados clínicos / ECG / Lab $\to$ **Diagnóstico provável**.
-   * Diagnóstico + Gravidade $\to$ **Próximo passo / Conduta imediata**.
+2. **Dois Sentidos Só Quando Ambos São High-Yield:** O objetivo do deck é poucos cards de alto impacto, não cobertura máxima. Por padrão, gere apenas a direção de maior valor clínico:
+   * Achados clínicos / eletrocardiograma (ECG) / exames laboratoriais → **Diagnóstico provável**.
+   * Diagnóstico + Gravidade → **Próximo passo / Conduta imediata**.
+
+   Adicione o segundo sentido (campos `reverse_front` / `reverse_back` do modelo `atomic`) **somente** quando a prova cobra o fato nas duas direções (ex.: deficiência enzimática ↔ doença; antídoto ↔ intoxicação; achado patognomônico ↔ doença). O sentido inverso fica na mesma nota (não conta como card duplicado) e deve ter pergunta própria, curta e sem ambiguidade. Na dúvida, não inverta.
 3. **Anti-Hiperatomização de Tríades e Critérios:** Nunca divida uma tríade clássica ou os critérios de um escore em 3 ou 4 cards separados e parecidos. Agrupe-os em:
    * Um único card `atomic` cuja resposta traga os itens de forma direta e concisa, **ou**
    * Um único `usmle_hybrid` usando `{{c1::...}}` compartilhado.
 4. **Poda de Respostas Idênticas:** Se dois cards possuem a mesma resposta exata (ex.: dois cards cuja resposta seja *"Esmolol IV"* ou *"Laparotomia"*), avalie se ambos são indispensáveis. Se testarem o mesmo princípio clínico, elimine o menos contextualizado.
+
+### Passo 0.5 — Regras de Escrita (Obrigatórias em Todos os Cards)
+1. **Siglas sempre por extenso, seguidas da sigla, todas as vezes em que aparecerem** (em `front`, `back`, `text`, `extra`, `vignette`, `answer` etc.). Ex.: "acidente vascular cerebral isquêmico (AVCi)", "pressão arterial (PA)", "frequência cardíaca (FC)". Unidades de medida (mg, mmHg, bpm) não precisam ser expandidas.
+2. **Sem LaTeX:** o Anki não lê `$...$`. Use símbolos Unicode: ≥ ≤ ≠ ± → ↑ ↓ ×, letras gregas (α β γ Δ μ), índices (β₂, α₁, CO₂, SpO₂) e frações simples (mg/kg, dP/dt).
+3. **Tags hierárquicas** no formato `Grande_Area::Tema::Subtema` (ex.: `Clinica_Medica::Cardiologia::Insuficiencia_Cardiaca`, `Cirurgia::Trauma::Trauma_Abdominal`, `Preventiva::Epidemiologia::Testes_Diagnosticos`). Grandes áreas: `Clinica_Medica`, `Cirurgia`, `Pediatria`, `Ginecologia_Obstetricia`, `Preventiva`, `Ciclo_Basico`. Quando o usuário informar a incidência do tema na prova, acrescente `incidencia::alta`, `incidencia::media` ou `incidencia::baixa`; nunca estime incidência sem dado.
 
 ---
 
@@ -74,6 +82,7 @@ Após concluir o **Fact-Check (Etapa 0)**, classifique cada conceito médico val
   * **Frente (`front`):** Pergunta altamente específica e sem ambiguidade, testando **apenas 1 variável**.
   * **Verso (`back`):** Resposta curtíssima (**1 a 8 palavras**). Proibido usar listas longas ou parágrafos no campo de resposta principal.
   * **Contexto opcional (`extra`):** Uma frase curta (1–2 linhas) explicando o mecanismo ou mnemônico se necessário.
+  * **Sentido inverso opcional (`reverse_front` + `reverse_back`):** Só quando os dois sentidos forem high-yield (ver Passo 0.4). Os dois campos devem vir juntos; o script recusa o card se vier só um.
 
 ### Caso 2: `usmle_hybrid` — Flashcard Híbrido USMLE Step 1 (Estilo *AnKing / Zanki* — Cloze + Campo `Extra` Enciclopédico)
 * **Quando usar:** Estudo longitudinal de ciências básicas, fisiopatologia integrada ou revisão de blocos teóricos extensos onde você quer **velocidade na frente (3–6s)** aliada a **consulta imediata no verso (`Extra`)**.
@@ -84,7 +93,7 @@ Após concluir o **Fact-Check (Etapa 0)**, classifique cada conceito médico val
     * Se a frase contiver dois termos correlatos ou uma tríade/parâmetro que devam ser lembrados juntos, use **o mesmo índice para todos**: `Na {{c1::Esclerose Tuberosa}}, a mutação ocorre nos genes {{c1::TSC1 ou TSC2}}...`. Dessa forma, o Anki gera **exatamente 1 card** ocultando os dois nós simultaneamente.
   * **Texto Cloze (`text`):** 1 a 2 frases com ancoragem clínica/fisiopatológica contendo o nó decisivo em `{{c1::...}}`. Nunca oculte metade da frase; oculte apenas o elemento chave.
   * **Campo Extra (`extra`):** Completo e estruturado ("One-Stop-Shop"). Inclua fisiopatologia resumida, pérolas de prova (*High-Yield Pearls*), tabelas comparativas em HTML simples ou mnemônicos para leitura rápida caso o usuário erre o card.
-  * **Fonte (`source`):** Referência ou tópico (ex.: *First Aid / Pathoma / Nefrologia*).
+  * **Fonte (`source` + `source_year`):** Referência e ano (ex.: *First Aid / Pathoma / Nefrologia*). O script recusa qualquer card com `c2`, `c3` etc.
 
 ### Caso 3: `clinical_vignette` — Flashcard Extenso de Mini-Vinheta Clínica (Estilo USMLE Step 2 CK / *Cheesy Dorian* / *Yousmle*)
 * **Quando usar:** Ciclo clínico, internato, diagnóstico diferencial de casos clínicos e algoritmos de conduta (*Next Best Step in Management*).
@@ -100,10 +109,10 @@ Após concluir o **Fact-Check (Etapa 0)**, classifique cada conceito médico val
   1. **Classifique a Causa-Raiz do Erro (`error_type`):**
      * `Lacuna Factual`: Faltou um dado direto (dose, antídoto, gene, critério).
      * `Falha de Reconhecimento (Illness Script)`: Não reconheceu a doença descrita no caso clínico.
-     * `Confusão com Distrator (Diagnóstico Diferencial)`: Ficou em dúvida entre a resposta certa ($A$) e outra opção parecida ($B$) e marcou $B$.
+     * `Confusão com Distrator (Diagnóstico Diferencial)`: Ficou em dúvida entre a resposta certa (A) e outra opção parecida (B) e marcou B.
      * `Erro de Algoritmo / Conduta (Next Best Step)`: Sabia o diagnóstico, mas inverteu a prioridade da conduta (ex.: pediu exame demorado em paciente instável).
   2. **Formule a Frente (`prompt`):**
-     * Se foi *Confusão com Distrator*: Formule uma pergunta de contraste direto ou uma mini-vinheta focada no achado que separa $A$ de $B$.
+     * Se foi *Confusão com Distrator*: Formule uma pergunta de contraste direto ou uma mini-vinheta focada no achado que separa A de B.
      * Se foi *Erro de Conduta*: Apresente o cenário clínico com o sinal determinante de gravidade/estágio e pergunte a conduta imediata.
   3. **Formule a Resposta (`answer`):** Direta, clara e objetiva.
   4. **Preencha a Análise do Distrator (`why_not_distractor`):** Explique claramente **por que a alternativa marcada estava errada neste paciente** E **em qual cenário clínico aquela alternativa marcada SERIA a resposta correta** (transformando 1 erro em 2 acertos futuros).
@@ -113,7 +122,7 @@ Após concluir o **Fact-Check (Etapa 0)**, classifique cada conceito médico val
 
 ## 2. Como Gerar o Arquivo `.apkg` Automaticamente
 
-Sempre que o usuário pedir para criar flashcards ou exportar para o Anki, gere um arquivo JSON seguindo o schema abaixo e execute o script [`scripts/generate_apkg.py`](file:///C:/Users/joaop/.gemini/config/skills/anki-medical-flashcards/scripts/generate_apkg.py).
+Sempre que o usuário pedir para criar flashcards ou exportar para o Anki, gere um arquivo JSON seguindo o schema abaixo e execute o script `scripts/generate_apkg.py`, que fica dentro da pasta desta skill.
 
 ### 2.1. Formato do JSON de Entrada
 
@@ -125,32 +134,45 @@ Sempre que o usuário pedir para criar flashcards ou exportar para o Anki, gere 
       "type": "atomic",
       "front": "Qual é o antídoto específico para intoxicação grave por beta-bloqueadores refratária à atropina e expansão volêmica?",
       "back": "Glucagon IV (em bolus seguido de infusão contínua)",
-      "extra": "Mecanismo: Ativa a adenilato ciclase aumentando o AMPc intracelular de forma independente dos receptores beta-adrenérgicos.",
-      "tags": ["Farmacologia", "Emergencia", "Atomico"]
+      "extra": "Mecanismo: Ativa a adenilato ciclase aumentando o monofosfato cíclico de adenosina (AMPc) intracelular de forma independente dos receptores beta-adrenérgicos.",
+      "source": "Goldfrank's Toxicologic Emergencies",
+      "source_year": "",
+      "tags": ["Clinica_Medica::Toxicologia::Antidotos"]
+    },
+    {
+      "type": "atomic",
+      "front": "Qual enzima está deficiente na doença de von Gierke (glicogenose tipo I)?",
+      "back": "Glicose-6-fosfatase",
+      "reverse_front": "A deficiência de glicose-6-fosfatase causa qual glicogenose?",
+      "reverse_back": "Doença de von Gierke (glicogenose tipo I)",
+      "tags": ["Ciclo_Basico::Bioquimica::Glicogenoses"]
     },
     {
       "type": "usmle_hybrid",
       "text": "Na {{c1::Esclerose Tuberosa}}, a mutação nos genes {{c1::TSC1 (hamartina) ou TSC2 (tuberina)}} leva à hiperativação da via mTOR e ao desenvolvimento de rabdomiomas cardíacos e angiofibromas faciais.",
       "extra": "<ul><li><b>Padrão de herança:</b> Autossômica dominante.</li><li><b>Achados clássicos (EPILOIA):</b> Máculas hipomelanóticas em folha de freixo (<i>ash-leaf spots</i>), tubérculos corticais, nódulos subependimários, angiomiolipomas renais bilaterais.</li><li><b>Tratamento direcionado:</b> Inibidores de mTOR (Everolimo / Sirolimo).</li></ul>",
       "source": "First Aid Step 1 / Neurologia & Genética",
-      "tags": ["USMLE_Step1", "Genetica", "Neurologia", "AnKing_Style"]
+      "tags": ["Clinica_Medica::Neurologia::Sindromes_Neurocutaneas", "Ciclo_Basico::Genetica"]
     },
     {
       "type": "clinical_vignette",
-      "vignette": "Homem de 62 anos, tabagista e hipertenso, chega à emergência com dor torácica lancinante de início súbito irradiada para a região interescapular há 1 hora. PA = 190/110 mmHg no braço direito e 145/85 mmHg no braço esquerdo; FC = 108 bpm. ECG mostra sobrecarga ventricular esquerda sem supradesnivelamento de ST. Angio-TC de tórax revela lâmina de dissecção restrita à aorta torácica descendente (distal à artéria subclávia esquerda), sem sinais de ruptura ou má perfusão visceral.",
+      "vignette": "Homem de 62 anos, tabagista e hipertenso, chega à emergência com dor torácica lancinante de início súbito irradiada para a região interescapular há 1 hora. pressão arterial (PA) = 190/110 mmHg no braço direito e 145/85 mmHg no braço esquerdo; frequência cardíaca (FC) = 108 bpm. Eletrocardiograma (ECG) mostra sobrecarga ventricular esquerda sem supradesnivelamento de ST. Angiotomografia computadorizada (angio-TC) de tórax revela lâmina de dissecção restrita à aorta torácica descendente (distal à artéria subclávia esquerda), sem sinais de ruptura ou má perfusão visceral.",
       "question": "Qual é o próximo melhor passo imediato no manejo farmacológico deste paciente?",
-      "answer": "Beta-bloqueador venoso (ex.: Esmolol ou Labetalol IV) para atingir FC < 60 bpm e PAS 100–120 mmHg.",
-      "extra": "<b>Classificação:</b> Dissecção Aórtica Stanford Tipo B (DeBakey III) não complicada.<br><b>Regra de Manejo:</b> Controle de impulso cardíaco (<i>anti-impulse therapy</i>) reduzindo a força de cisalhamento ($dP/dt$) com beta-bloqueador ANTES de associar vasodilatadores diretos (como nitroprussiato de sódio), pois o vasodilatador isolado provoca taquicardia reflexa e propaga a dissecção.",
-      "tags": ["USMLE_Step2CK", "Cardiologia", "Vignette"]
+      "answer": "Betabloqueador intravenoso (IV) (ex.: esmolol ou labetalol) para frequência cardíaca (FC) < 60 bpm e pressão arterial sistólica (PAS) 100–120 mmHg.",
+      "extra": "<b>Classificação:</b> Dissecção Aórtica Stanford Tipo B (DeBakey III) não complicada.<br><b>Regra de Manejo:</b> Controle de impulso cardíaco (<i>anti-impulse therapy</i>) reduzindo a força de cisalhamento (dP/dt) com beta-bloqueador ANTES de associar vasodilatadores diretos (como nitroprussiato de sódio), pois o vasodilatador isolado provoca taquicardia reflexa e propaga a dissecção.",
+      "source": "Diretriz ACC/AHA de doenças da aorta",
+      "source_year": "2022",
+      "tags": ["Clinica_Medica::Cardiologia::Doencas_da_Aorta"]
     },
     {
       "type": "question_error",
       "error_type": "Erro de Algoritmo / Conduta (Next Best Step)",
-      "prompt": "Paciente vítima de colisão automobilística apresenta dor abdominal difusa, PA = 78/42 mmHg, FC = 132 bpm após 1L de cristaloide/concentrado de hemácias e FAST positivo no espaço de Morrison. Qual é a conduta imediata?",
+      "prompt": "Paciente vítima de colisão automobilística apresenta dor abdominal difusa, pressão arterial (PA) = 78/42 mmHg, frequência cardíaca (FC) = 132 bpm após 1 L de cristaloide/concentrado de hemácias e avaliação ultrassonográfica focada no trauma (FAST) positiva no espaço de Morrison. Qual é a conduta imediata?",
       "answer": "Laparotomia exploradora imediata (Centro Cirúrgico).",
       "why_not_distractor": "<b>Por que NÃO realizar Tomografia Computadorizada (TC) de abdome com contraste:</b> A TC exige transporte do paciente e tempo, sendo formalmente contraindicada no trauma abdominal fechado <b>hemodinamicamente instável</b> com FAST positivo. <br><b>Quando a TC seria a resposta certa:</b> Apenas se o paciente estivesse <b>hemodinamicamente estável</b> (PAS > 90 mmHg mantida), permitindo avaliar o grau de lesão de vísceras sólidas para tratamento conservador.",
       "educational_objective": "No trauma abdominal contuso com instabilidade hemodinâmica refratária e FAST (ou LPD) positivo, a conduta imediata é sempre laparotomia exploradora de emergência, nunca tomografia.",
-      "tags": ["Caderno_de_Erros", "Cirurgia", "Trauma"]
+      "source": "ATLS (American College of Surgeons)",
+      "tags": ["Caderno_de_Erros", "Cirurgia::Trauma::Trauma_Abdominal"]
     }
   ]
 }
@@ -158,8 +180,14 @@ Sempre que o usuário pedir para criar flashcards ou exportar para o Anki, gere 
 
 ### 2.2. Comando para Executar o Gerador
 
+O caminho do script depende da ferramenta onde a skill está instalada (use a pasta base da skill informada ao carregá-la):
+* **Claude Code:** `C:\Users\joaop\.claude\skills\anki-medical-flashcards\scripts\generate_apkg.py`
+* **Antigravity:** `C:\Users\joaop\.gemini\config\skills\anki-medical-flashcards\scripts\generate_apkg.py`
+
 ```powershell
-python "C:\Users\joaop\.gemini\config\skills\anki-medical-flashcards\scripts\generate_apkg.py" --input "caminho/para/cards.json" --output "caminho/para/deck.apkg"
+python "<pasta da skill>\scripts\generate_apkg.py" --input "caminho/para/cards.json" --output "caminho/para/deck.apkg"
 ```
 
-> **Nota Técnica:** O script [`generate_apkg.py`](file:///C:/Users/joaop/.gemini/config/skills/anki-medical-flashcards/scripts/generate_apkg.py) cria nativamente os 4 Note Types no banco de dados SQLite interno do Anki (`collection.anki2`), inclusive configurando o Note Type `USMLE Hybrid Cloze` com a flag oficial `type = 1` (Cloze nativo do Anki) para que múltiplas ocultações (`{{c1::...}}`, `{{c2::...}}`) funcionem perfeitamente no Anki Desktop, AnkiWeb, AnkiDroid e AnkiMobile.
+> **Nota Técnica:** O script `generate_apkg.py` cria os 4 Note Types (versão v2, com campos `Source` e `Year`) no banco de dados interno do Anki (`collection.anki2`). O Note Type Cloze usa o tipo Cloze nativo do Anki, mas **esta skill usa somente `{{c1::...}}`**: o script recusa `c2`, `c3` etc. (1 nota = 1 card).
+>
+> **Testes:** na pasta da skill, rode `python -m unittest discover -s tests -v`. Rode sempre depois de alterar o script.
