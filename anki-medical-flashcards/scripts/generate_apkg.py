@@ -435,8 +435,13 @@ def build_deck(data: dict):
     for idx, item in enumerate(cards_data, start=1):
         card_type = item.get("type", "atomic").strip().lower()
         tags = sanitize_tags(item.get("tags", []))
-        source = _field(item, "source")
+        source = _field(item, "source").strip()
         year = sanitize_html_field(str(item.get("source_year", "") or ""))
+        if not source:
+            raise ValueError(
+                f"Card #{idx} ({card_type}) está sem 'source'. Todo card precisa citar "
+                "diretriz, artigo ou livro-texto (nunca o material da aula nem material de prova)."
+            )
 
         if card_type == "atomic":
             front = _field(item, "front")

@@ -24,9 +24,12 @@ Esta skill audita materiais de estudo médico (slides, PDFs, fotos de aula, anot
 >
 > **Padrão Obrigatório de Substituição e Anonimização:**
 > 1. **Nome do Deck (`deck_name`):** Use sempre a taxonomia médica universal por especialidade e patologia (ex.: `Medicina::Cardiologia::Parada Cardiorrespiratoria e Ressuscitacao`, `Medicina::Neurologia::AVC Isquemico`).
-> 2. **Campos `source` e `source_year`:** Cite exclusivamente diretrizes oficiais de sociedades médicas, ensaios clínicos ou livros-texto de referência (ex.: `Diretrizes AHA/SBC 2020-2025`, `Diretriz Brasileira de Fibrilação Atrial (SBC)`, `Harrison Medicina Interna`, `First Aid / Pathoma`). Em `source_year`, coloque o ano da diretriz/edição usada (ex.: `2026`). Todos os 4 modelos têm esses campos; preencha sempre que a afirmação vier de diretriz. Se não souber o ano com certeza, deixe vazio — nunca invente.
+> 2. **Campos `source` e `source_year` (OBRIGATÓRIOS em todo card — o script recusa card sem `source`):**
+>    * **Cite:** a diretriz mais recente da sociedade médica, artigos de referência (ensaio clínico, revisão sistemática, metanálise; formato `Autor et al., Revista`) ou livros-texto (Harrison, Goldman-Cecil, Sabiston, Robbins, Guyton, Nelson, Williams Obstetrics etc.). Ex.: `Diretriz AHA/ASA de AVC isquêmico agudo`, `Diretriz Brasileira de Fibrilação Atrial (SBC)`, `Harrison Medicina Interna`.
+>    * **Nunca cite:** o material que o usuário forneceu (aula, slides, apostila, resumo) nem materiais de preparação para prova (First Aid, Pathoma, UWorld, AMBOSS, Sketchy, decks prontos, cursinhos). Esses servem só de ponto de partida; a referência do card é a fonte primária que confirmou o dado no Fact-Check.
+>    * **`source_year`:** ano da diretriz/edição (ex.: `2026`). Confira no PubMed ou no site da sociedade; se não tiver certeza, deixe vazio — nunca invente.
 > 3. **Conteúdo dos Cards (`front`, `back`, `text`, `extra`, `tags`):** Extraia apenas conceitos fisiopatológicos e clínicos puros baseados em evidências. É expressamente proibido citar nomes de professores, jargões proprietários de cursinhos, logotipos ou referências a apostilas e aulas de plataformas comerciais.
-> 4. **Nomes de métodos e decks comerciais (AnKing, Zanki, Yousmle, Cheesy Dorian, UWorld, AMBOSS etc.):** servem apenas de referência metodológica para esta skill. **Não os cite no texto dos cards nem nas tags.** Livros-texto usados como referência podem aparecer somente no campo `source`.
+> 4. **Nomes de métodos e decks comerciais (AnKing, Zanki, Yousmle, Cheesy Dorian, UWorld, AMBOSS etc.):** servem apenas de referência metodológica para esta skill. **Não os cite em nenhuma parte dos cards** (texto, tags ou `source`).
 
 > **Regra Áurea de Qualidade:** **NUNCA gere flashcards diretamente de anotações de alunos, transcrições de IA ou slides sem antes realizar um Fact-Check completo.** Consolidar um dado clínico incorreto na memória de longo prazo via repetição espaçada é grave tanto para provas (USMLE, Revalida, Residência) quanto para a segurança do paciente.
 
@@ -93,15 +96,15 @@ Após concluir o **Fact-Check (Etapa 0)**, classifique cada conceito médico val
     * Se a frase contiver dois termos correlatos ou uma tríade/parâmetro que devam ser lembrados juntos, use **o mesmo índice para todos**: `Na {{c1::Esclerose Tuberosa}}, a mutação ocorre nos genes {{c1::TSC1 ou TSC2}}...`. Dessa forma, o Anki gera **exatamente 1 card** ocultando os dois nós simultaneamente.
   * **Texto Cloze (`text`):** 1 a 2 frases com ancoragem clínica/fisiopatológica contendo o nó decisivo em `{{c1::...}}`. Nunca oculte metade da frase; oculte apenas o elemento chave.
   * **Campo Extra (`extra`):** Completo e estruturado ("One-Stop-Shop"). Inclua fisiopatologia resumida, pérolas de prova (*High-Yield Pearls*), tabelas comparativas em HTML simples ou mnemônicos para leitura rápida caso o usuário erre o card.
-  * **Fonte (`source` + `source_year`):** Referência e ano (ex.: *First Aid / Pathoma / Nefrologia*). O script recusa qualquer card com `c2`, `c3` etc.
+  * **Fonte (`source` + `source_year`):** Diretriz, artigo ou livro-texto atual e ano (ex.: *Northrup et al., Pediatr Neurol — critérios internacionais do complexo esclerose tuberosa*, 2021). O script recusa qualquer card com `c2`, `c3` etc.
 
 ### Caso 3: `clinical_vignette` — Flashcard Extenso de Mini-Vinheta Clínica (Estilo USMLE Step 2 CK / *Cheesy Dorian* / *Yousmle*)
 * **Quando usar:** Ciclo clínico, internato, diagnóstico diferencial de casos clínicos e algoritmos de conduta (*Next Best Step in Management*).
 * **Regras de ouro:**
-  * **Vinheta Clínica (`vignette`):** Caso clínico enxuto de 2 a 4 frases contendo: (1) Demografia + Queixa principal/tempo de evolução, (2) Sinais vitais e achados críticos do exame físico, (3) Dados laboratoriais/imagem pertinentes.
+  * **Vinheta Clínica (`vignette`):** Caso **curto e direcionado**: 1 a 2 frases, no máximo ~40 palavras. Inclua só os discriminadores que levam à resposta (demografia + queixa + 1 a 3 achados decisivos de exame, laboratório ou imagem). Corte tudo que não muda a resposta (sinais vitais normais, antecedentes irrelevantes, achados negativos que não descartam diferencial importante). Teste: se uma frase pode ser apagada sem mudar a resposta, apague.
   * **Pergunta Direcionada (`question`):** Pergunta de 2ª ou 3ª ordem na Taxonomia de Bloom: *"Qual é o diagnóstico mais provável?"*, *"Qual é o próximo melhor passo no manejo imediato?"*, ou *"Qual o mecanismo fisiopatológico responsável por este achado?"*.
   * **Resposta Direta (`answer`):** A conduta ou diagnóstico exato em destaque (1 linha).
-  * **Raciocínio Clínico e Fluxograma (`extra`):** Explicação dos discriminadores positivos da vinheta e do algoritmo de manejo (1ª linha vs. 2ª linha, sinais de alarme).
+  * **Raciocínio Clínico e Fluxograma (`extra`):** Curto: até 3 itens (por que é esse diagnóstico/conduta, o que mudaria a conduta, armadilha clássica de prova).
 
 ### Caso 4: `question_error` — Transformação de Erro de Questão em Flashcard (Caderno de Erros Inteligente)
 * **Quando usar:** **EXCLUSIVAMENTE** quando o usuário fornecer uma questão de prova/simulado (*UWorld*, *AMBOSS*, *NBME*, Revalida ou Residência) que ele próprio errou ou ficou em dúvida, ou quando ele expressamente apontar um erro pessoal que deseja dissecar. **Nunca** utilize este modelo para anotações de aula, resumos ou slides de terceiros.
@@ -135,7 +138,7 @@ Sempre que o usuário pedir para criar flashcards ou exportar para o Anki, gere 
       "front": "Qual é o antídoto específico para intoxicação grave por beta-bloqueadores refratária à atropina e expansão volêmica?",
       "back": "Glucagon IV (em bolus seguido de infusão contínua)",
       "extra": "Mecanismo: Ativa a adenilato ciclase aumentando o monofosfato cíclico de adenosina (AMPc) intracelular de forma independente dos receptores beta-adrenérgicos.",
-      "source": "Goldfrank's Toxicologic Emergencies",
+      "source": "Goldfrank's Toxicologic Emergencies (livro-texto)",
       "source_year": "",
       "tags": ["Clinica_Medica::Toxicologia::Antidotos"]
     },
@@ -145,23 +148,26 @@ Sempre que o usuário pedir para criar flashcards ou exportar para o Anki, gere 
       "back": "Glicose-6-fosfatase",
       "reverse_front": "A deficiência de glicose-6-fosfatase causa qual glicogenose?",
       "reverse_back": "Doença de von Gierke (glicogenose tipo I)",
+      "source": "Kishnani et al., Genet Med — diretriz do American College of Medical Genetics and Genomics (ACMG) para glicogenose tipo I",
+      "source_year": "2014",
       "tags": ["Ciclo_Basico::Bioquimica::Glicogenoses"]
     },
     {
       "type": "usmle_hybrid",
       "text": "Na {{c1::Esclerose Tuberosa}}, a mutação nos genes {{c1::TSC1 (hamartina) ou TSC2 (tuberina)}} leva à hiperativação da via mTOR e ao desenvolvimento de rabdomiomas cardíacos e angiofibromas faciais.",
       "extra": "<ul><li><b>Padrão de herança:</b> Autossômica dominante.</li><li><b>Achados clássicos (EPILOIA):</b> Máculas hipomelanóticas em folha de freixo (<i>ash-leaf spots</i>), tubérculos corticais, nódulos subependimários, angiomiolipomas renais bilaterais.</li><li><b>Tratamento direcionado:</b> Inibidores de mTOR (Everolimo / Sirolimo).</li></ul>",
-      "source": "First Aid Step 1 / Neurologia & Genética",
+      "source": "Northrup et al., Pediatr Neurol — critérios diagnósticos e recomendações internacionais do complexo esclerose tuberosa",
+      "source_year": "2021",
       "tags": ["Clinica_Medica::Neurologia::Sindromes_Neurocutaneas", "Ciclo_Basico::Genetica"]
     },
     {
       "type": "clinical_vignette",
-      "vignette": "Homem de 62 anos, tabagista e hipertenso, chega à emergência com dor torácica lancinante de início súbito irradiada para a região interescapular há 1 hora. pressão arterial (PA) = 190/110 mmHg no braço direito e 145/85 mmHg no braço esquerdo; frequência cardíaca (FC) = 108 bpm. Eletrocardiograma (ECG) mostra sobrecarga ventricular esquerda sem supradesnivelamento de ST. Angiotomografia computadorizada (angio-TC) de tórax revela lâmina de dissecção restrita à aorta torácica descendente (distal à artéria subclávia esquerda), sem sinais de ruptura ou má perfusão visceral.",
-      "question": "Qual é o próximo melhor passo imediato no manejo farmacológico deste paciente?",
-      "answer": "Betabloqueador intravenoso (IV) (ex.: esmolol ou labetalol) para frequência cardíaca (FC) < 60 bpm e pressão arterial sistólica (PAS) 100–120 mmHg.",
-      "extra": "<b>Classificação:</b> Dissecção Aórtica Stanford Tipo B (DeBakey III) não complicada.<br><b>Regra de Manejo:</b> Controle de impulso cardíaco (<i>anti-impulse therapy</i>) reduzindo a força de cisalhamento (dP/dt) com beta-bloqueador ANTES de associar vasodilatadores diretos (como nitroprussiato de sódio), pois o vasodilatador isolado provoca taquicardia reflexa e propaga a dissecção.",
-      "source": "Diretriz ACC/AHA de doenças da aorta",
-      "source_year": "2022",
+      "vignette": "Homem de 62 anos, hipertenso, com dor torácica súbita e lancinante irradiada para o dorso. Angiotomografia computadorizada (angio-TC): dissecção restrita à aorta descendente, sem ruptura nem má perfusão.",
+      "question": "Qual é a primeira medida farmacológica?",
+      "answer": "Betabloqueador intravenoso (IV) (esmolol ou labetalol): frequência cardíaca (FC) < 60 bpm e pressão arterial sistólica (PAS) 100–120 mmHg.",
+      "extra": "<ul><li><b>Diagnóstico:</b> dissecção Stanford tipo B não complicada → tratamento clínico.</li><li><b>Armadilha:</b> vasodilatador antes do betabloqueador causa taquicardia reflexa e propaga a dissecção.</li><li><b>Muda a conduta:</b> ruptura, má perfusão ou dor refratária → reparo endovascular (TEVAR).</li></ul>",
+      "source": "Diretriz ESC de doenças arteriais periféricas e da aorta; diretriz ACC/AHA de doenças da aorta (2022)",
+      "source_year": "2024",
       "tags": ["Clinica_Medica::Cardiologia::Doencas_da_Aorta"]
     },
     {
@@ -171,7 +177,8 @@ Sempre que o usuário pedir para criar flashcards ou exportar para o Anki, gere 
       "answer": "Laparotomia exploradora imediata (Centro Cirúrgico).",
       "why_not_distractor": "<b>Por que NÃO realizar Tomografia Computadorizada (TC) de abdome com contraste:</b> A TC exige transporte do paciente e tempo, sendo formalmente contraindicada no trauma abdominal fechado <b>hemodinamicamente instável</b> com FAST positivo. <br><b>Quando a TC seria a resposta certa:</b> Apenas se o paciente estivesse <b>hemodinamicamente estável</b> (PAS > 90 mmHg mantida), permitindo avaliar o grau de lesão de vísceras sólidas para tratamento conservador.",
       "educational_objective": "No trauma abdominal contuso com instabilidade hemodinâmica refratária e FAST (ou LPD) positivo, a conduta imediata é sempre laparotomia exploradora de emergência, nunca tomografia.",
-      "source": "ATLS (American College of Surgeons)",
+      "source": "Diretriz WSES de trauma hepático (Coccolini et al., World J Emerg Surg); ATLS (American College of Surgeons)",
+      "source_year": "2020",
       "tags": ["Caderno_de_Erros", "Cirurgia::Trauma::Trauma_Abdominal"]
     }
   ]

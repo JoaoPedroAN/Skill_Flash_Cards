@@ -10,7 +10,9 @@
         "Ciclo_Basico::Bioquimica::Glicogenoses"
       ],
       "reverse_front": "A deficiência de glicose-6-fosfatase causa qual glicogenose?",
-      "reverse_back": "Doença de von Gierke (glicogenose tipo I)"
+      "reverse_back": "Doença de von Gierke (glicogenose tipo I)",
+      "source": "Kishnani et al., Genet Med — diretriz do American College of Medical Genetics and Genomics (ACMG) para glicogenose tipo I",
+      "source_year": 2014
     },
     {
       "type": "atomic",
@@ -19,39 +21,41 @@
       "extra": "Mecanismo: Ativa a adenilato ciclase aumentando o AMPc intracelular no miocárdio por via independente dos receptores beta-1 adrenérgicos.",
       "tags": [
         "Clinica_Medica::Toxicologia::Antidotos"
-      ]
+      ],
+      "source": "Goldfrank's Toxicologic Emergencies (livro-texto)"
     },
     {
       "type": "usmle_hybrid",
       "text": "Na {{c1::Esclerose Tuberosa}}, mutações nos genes supressores tumorais {{c1::TSC1 (hamartina) ou TSC2 (tuberina)}} levam à hiperativação constitutiva da via mTOR, causando hamartomas múltiplos (rabdomiomas cardíacos, tubérculos corticais e angiomiolipomas renais).",
       "extra": "<ul><li><b>Padrão de Herança:</b> Autossômica dominante (expressividade variável).</li><li><b>Apresentação Dermatológica Precoce:</b> Máculas hipomelanóticas em 'folha de freixo' (<i>ash-leaf spots</i>, visíveis à lâmpada de Wood), angiofibromas faciais e placas de Shagreen.</li><li><b>Síndrome Epiléptica Associada em Lactentes:</b> Síndrome de West (espasmos infantis + hipsarritmia no EEG) — tratamento de 1ª linha: <b>Vigabatrina</b>.</li><li><b>Alvo Farmacológico Direcionado:</b> Inibidores de mTOR (Everolimo / Sirolimo).</li></ul>",
-      "source": "First Aid USMLE Step 1 / Pathoma / Neurologia",
+      "source": "Northrup et al., Pediatr Neurol — critérios diagnósticos e recomendações internacionais do complexo esclerose tuberosa",
       "tags": [
         "Clinica_Medica::Neurologia::Sindromes_Neurocutaneas",
         "Ciclo_Basico::Genetica"
-      ]
+      ],
+      "source_year": 2021
     },
     {
       "type": "usmle_hybrid",
       "text": "No preparo pré-operatório do {{c1::Feocromocitoma}}, deve-se iniciar bloqueio {{c1::alfa-adrenérgico (ex.: fenoxibenzamina ou doxazosina)}} 10 a 14 dias ANTES de administrar qualquer beta-bloqueador.",
       "extra": "<ul><li><b>Por que nunca iniciar o beta-bloqueador primeiro?</b> O bloqueio isolado dos receptores β₂ vasodilatadores periféricos deixa a estimulação α₁ vasoconstritora sem oposição (<i>unopposed alpha stimulation</i>), desencadeando crise hipertensiva maligna e edema agudo de pulmão.</li><li><b>Diagnóstico Inicial (Maior Sensibilidade):</b> Metanefrinas fracionadas livres plasmáticas ou metanefrinas urinárias de 24 horas.</li></ul>",
-      "source": "Diretriz da Endocrine Society sobre feocromocitoma e paraganglioma",
+      "source": "Diretriz da Japan Endocrine Society de feocromocitoma e paraganglioma (Tanabe et al., Endocr J); diretriz da Endocrine Society (2014)",
       "tags": [
         "Clinica_Medica::Endocrinologia::Feocromocitoma"
       ],
-      "source_year": 2014
+      "source_year": 2025
     },
     {
       "type": "clinical_vignette",
-      "vignette": "Homem de 62 anos, hipertenso e tabagista, dá entrada na emergência com dor torácica lancinante de início súbito há 1 hora, irradiada para a região interescapular. Ao exame: PA = 195/115 mmHg no membro superior direito e 145/85 mmHg no membro superior esquerdo; FC = 108 bpm. ECG mostra sobrecarga ventricular esquerda sem supradesnivelamento de ST. Angio-TC de aorta demonstra lâmina de dissecção iniciando distalmente à artéria subclávia esquerda, sem sinais de ruptura ou isquemia mesentérica/renal.",
-      "question": "Qual é o próximo melhor passo imediato no manejo farmacológico deste paciente?",
-      "answer": "Beta-bloqueador venoso titulável (Esmolol ou Labetalol IV) para reduzir FC < 60 bpm e PAS entre 100–120 mmHg.",
-      "extra": "<ul><li><b>Diagnóstico:</b> Dissecção Aórtica Aguda Stanford Tipo B (DeBakey III) não complicada.</li><li><b>Princípio Terapêutico (Anti-Impulse Therapy):</b> Reduzir o estresse de cisalhamento na parede aórtica (dP/dt) antes de usar vasodilatadores diretos (como nitroprussiato de sódio).</li><li><b>Quando operar o Tipo B (TEVAR)?</b> Apenas se complicada (ruptura, expansão rápida, síndrome de má perfusão visceral/renal/membros ou dor refratária).</li></ul>",
+      "vignette": "Homem de 62 anos, hipertenso, com dor torácica súbita e lancinante irradiada para o dorso. Angiotomografia computadorizada (angio-TC): dissecção restrita à aorta descendente, sem ruptura nem má perfusão.",
+      "question": "Qual é a primeira medida farmacológica?",
+      "answer": "Betabloqueador intravenoso (IV) (esmolol ou labetalol): frequência cardíaca (FC) < 60 bpm e pressão arterial sistólica (PAS) 100–120 mmHg.",
+      "extra": "<ul><li><b>Diagnóstico:</b> dissecção Stanford tipo B não complicada → tratamento clínico.</li><li><b>Armadilha:</b> vasodilatador antes do betabloqueador causa taquicardia reflexa e propaga a dissecção.</li><li><b>Muda a conduta:</b> ruptura, má perfusão ou dor refratária → reparo endovascular (TEVAR).</li></ul>",
       "tags": [
         "Clinica_Medica::Cardiologia::Doencas_da_Aorta"
       ],
-      "source": "Diretriz ACC/AHA de doenças da aorta",
-      "source_year": 2022
+      "source": "Diretriz ESC de doenças arteriais periféricas e da aorta; diretriz ACC/AHA de doenças da aorta (2022)",
+      "source_year": 2024
     },
     {
       "type": "question_error",
@@ -64,7 +68,8 @@
         "Caderno_de_Erros",
         "Cirurgia::Trauma::Trauma_Abdominal"
       ],
-      "source": "ATLS (American College of Surgeons)"
+      "source": "Diretriz WSES de trauma hepático (Coccolini et al., World J Emerg Surg); ATLS (American College of Surgeons)",
+      "source_year": 2020
     },
     {
       "type": "question_error",
@@ -77,7 +82,7 @@
         "Caderno_de_Erros",
         "Cirurgia::Vias_Biliares::Colangite"
       ],
-      "source": "Diretrizes de Tóquio (TG18)",
+      "source": "Diretrizes de Tóquio para colangite e colecistite agudas (TG18)",
       "source_year": 2018
     }
   ]

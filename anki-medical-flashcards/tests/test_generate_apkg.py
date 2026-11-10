@@ -16,7 +16,34 @@ import generate_apkg as g  # noqa: E402
 
 
 def deck_com(*cards):
+    for c in cards:
+        c.setdefault("source", "Fonte de teste")
     return {"deck_name": "Teste::Regras", "cards": list(cards)}
+
+
+class TestFonteObrigatoria(unittest.TestCase):
+    def test_card_sem_fonte_e_recusado(self):
+        for tipo, campos in [
+            ("atomic", {"front": "P?", "back": "R"}),
+            ("usmle_hybrid", {"text": "{{c1::X}}"}),
+            ("clinical_vignette", {"vignette": "V", "question": "Q?", "answer": "A"}),
+            ("question_error", {"prompt": "P?", "answer": "A"}),
+        ]:
+            card = {"type": tipo, **campos}
+            with self.subTest(tipo=tipo), self.assertRaisesRegex(ValueError, "source"):
+                g.build_deck({"deck_name": "T", "cards": [card]})
+
+    def test_exemplo_oficial_tem_fonte_em_todos(self):
+        exemplo = json.loads((SKILL_DIR / "examples" / "exemplo_medicina_4_modelos.json").read_text(encoding="utf-8"))
+        for c in exemplo["cards"]:
+            self.assertTrue(c.get("source", "").strip(), c)
+
+    def test_exemplo_sem_material_de_prova_na_fonte(self):
+        proibidos = ["first aid", "pathoma", "uworld", "amboss", "usmle", "sketchy"]
+        exemplo = (SKILL_DIR / "examples" / "exemplo_medicina_4_modelos.json").read_text(encoding="utf-8")
+        for c in json.loads(exemplo)["cards"]:
+            for p in proibidos:
+                self.assertNotIn(p, c.get("source", "").lower(), c.get("source"))
 
 
 class TestClozeSoC1(unittest.TestCase):
